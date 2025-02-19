@@ -37,10 +37,30 @@
         <p>¡Error! No se pudo procesar tu archivo.</p>
     </div>
 
+    <!-- Tabla de resultados -->
+    <div id="tablaResultados">
+        <table>
+            <thead>
+                <tr>
+                    <th>ITEM</th>
+                    <th>CANTIDAD</th>
+                    <th>NODO</th>
+                    <th>DISTANCIA</th>
+                    <th>FECHA DE ENVIO</th>
+                </tr>
+            </thead> <tbody id="resultadoTabla"> </tbody>
+        </table>
+    </div>
+
     <!-- Botón de descarga de CSV -->
     <div id="csvDownloadSection" style="display: none;">
         <button id="descargarCsv">Descargar CSV</button>
     </div>
+
+    <!-- Footer -->
+    <footer>
+        &copy; 2025 Todos los derechos reservados
+    </footer>
 
     <script>
         document.getElementById("fileForm").addEventListener("submit", function(event) {
@@ -54,19 +74,13 @@
                 return;
             }
 
-            // Mostrar barra de progreso
+            //Limpiar barra, tabla y boton de descarga
+            document.getElementById("tablaResultados").style.display = "none";
+            document.getElementById("csvDownloadSection").style.display = "none";
             document.getElementById("formatoBarraProgreso").style.display = "block";
-            let progress = 0;
-            let interval = setInterval(() => {
-                if (progress < 100) {
-                    progress += 10;
-                    document.getElementById("barraProgreso").style.width = progress + "%";
-                    document.getElementById("barraProgreso").textContent = progress + "%";
-                } else {
-                    clearInterval(interval);
-                }
-            }, 300);
-
+            document.getElementById("barraProgreso").style.width = "0%";
+            document.getElementById("barraProgreso").textContent = "0%";
+            
             let reader = new FileReader();
             reader.onload = function(e) {
                 let text = e.target.result;
@@ -77,36 +91,56 @@
                     return;
                 }
 
+                // Calcular el tiempo total de procesamiento
+                let tiempoBasePorLinea = 3;
+                let tiempoTotal = lines.length * tiempoBasePorLinea;
+
+                // Mostrar la barra de progreso
+                let progress = 0;
+                let totalSteps = 100;
+                let stepDuration = tiempoTotal * 1000 / totalSteps;
+                
+                let interval = setInterval(function() {
+                    if (progress < totalSteps) {
+                        progress++;
+                        let percentage = Math.floor((progress / totalSteps) * 100);
+                        document.getElementById("barraProgreso").style.width = percentage + "%";
+                        document.getElementById("barraProgreso").textContent = percentage + "%";
+                    } else {
+                        clearInterval(interval); 
+                        setTimeout(function() {
+                            document.getElementById("formatoBarraProgreso").style.display = "none";
+                            mostrarTabla(lines); // Mostrar la tabla
+                        }, 2000);
+                    }
+                }, stepDuration);
+
                 let xmlString = convertirCSVaXML(lines);
                 console.log("XML generado:\n", xmlString);
 
-                enviarXML(xmlString);
+                //enviarXML(xmlString);
             };
 
             reader.readAsText(file);
         });
 
         function convertirCSVaXML(lines) {
-		
-			console.log("LEYENDO EL CSV DE ENTRADA "+lines)
-			console.log(lines.length)
-            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<Promise OrganizationCode="DSW">\n';
-            xml += '  <PromiseLines>\n';
-			let zipCode=""
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+            
+            // Iterar sobre cada línea del archivo CSV
             for (let i = 0; i < lines.length; i++) {
-			
                 let values = lines[i].split(",");
-				
                 let itemID = values[0].trim();
                 let requiredQty = values[1].trim();
-                zipCode = values[2].trim();
+                let zipCode = values[2].trim();
 
-                xml += `    <PromiseLine ItemID="${itemID}" ProductClass="GOOD" RequiredQty="${requiredQty}" UnitOfMeasure="UN"/>\n`;
+                xml += `<Promise OrganizationCode="DSW">\n`;
+                xml += `<PromiseLines>\n`;
+                xml += `<PromiseLine ItemID="${itemID}" ProductClass="GOOD" RequiredQty="${requiredQty}" UnitOfMeasure="UN" />\n`;
+                xml += `</PromiseLines>\n`;
+                xml += `<ShipToAddress ZipCode="${zipCode}" />\n`;
+                xml += `</Promise>\n`;
             }
-
-            xml += '  </PromiseLines>\n';
-            xml += `  <ShipToAddress ZipCode="${zipCode}"/>\n`;
-            xml += "</Promise>";
 
             return xml;
         }
@@ -117,7 +151,7 @@
 
             xhr.open("POST", url, true);
             xhr.setRequestHeader("Content-Type", "application/xml");
-			xhr.setRequestHeader("Accept", "application/xml");
+            xhr.setRequestHeader("Accept", "application/xml");
 
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
@@ -134,41 +168,71 @@
                 alert("Error de conexión con el servidor.");
                 document.getElementById("mensajeError").style.display = "block";
             };
-
+            
             xhr.send(xmlString);
         }
 
         function procesarXMLRespuesta(xmlString) {
-			let parser = new DOMParser();
-			let xmlDoc = parser.parseFromString(xmlString, "text/xml");
-			let promiseLines = xmlDoc.getElementsByTagName("PromiseLine");
+            let parser = new DOMParser();
+            let xmlDoc = parser.parseFromString(xmlString, "text/xml");
+            let promiseLines = xmlDoc.getElementsByTagName("PromiseLine");
 
-			if (promiseLines.length === 0) {
-				alert("No se encontraron datos en la respuesta del servidor.");
-				return;
-			}
+            if (promiseLines.length === 0) {
+                alert("No se encontraron datos en la respuesta del servidor.");
+                return;
+            }
 
-			let csvContent = "Item,Cantidad,Nodo,Distancia,Fecha de envío\n"; // Encabezado del CSV
+            let csvContent = "Item,Cantidad,Nodo,Distancia,Fecha de envío\n"; // Encabezado del CSV
 
-			for (let i = 0; i < promiseLines.length; i++) {
-				let itemID = promiseLines[i].getAttribute("ItemID");
+            for (let i = 0; i < promiseLines.length; i++) {
+                let itemID = promiseLines[i].getAttribute("ItemID");
 
-				// Buscar el nodo <Assignments>
-				let assignments = promiseLines[i].getElementsByTagName("Assignment");
-				if (assignments.length > 0) {
-					let assignment = assignments[0]; // Tomamos el primer Assignment
+                // Buscar el nodo <Assignments>
+                let assignments = promiseLines[i].getElementsByTagName("Assignment");
+                if (assignments.length > 0) {
+                    let assignment = assignments[0]; // Tomamos el primer Assignment
 
-					let quantity = assignment.getAttribute("Quantity") || "N/A";
-					let shipNode = assignment.getAttribute("ShipNode") || "N/A";
-					let distance = assignment.getAttribute("Distance") || "N/A";
-					let deliveryDate = assignment.getAttribute("DeliveryDate") || "N/A";
+                    let quantity = assignment.getAttribute("Quantity") || "N/A";
+                    let shipNode = assignment.getAttribute("ShipNode") || "N/A";
+                    let distance = assignment.getAttribute("Distance") || "N/A";
+                    let deliveryDate = assignment.getAttribute("DeliveryDate") || "N/A";
 
-					csvContent += `${itemID},${quantity},${shipNode},${distance},${deliveryDate}\n`;
-				}
-			}
+                    csvContent += `${itemID},${quantity},${shipNode},${distance},${deliveryDate}\n`;
+                }
+            }
 
-			generarCSV(csvContent);
-		}
+            //generarCSV(csvContent); //Sera despues de la tabla
+        }
+
+
+        function mostrarTabla(lines) {
+            document.getElementById("tablaResultados").style.display = "block";
+            let tbody = document.getElementById("resultadoTabla");
+            tbody.innerHTML = "";
+
+            // Llenar la tabla con los datos del archivo CSV cargado
+            lines.forEach(function(line) {
+                let values = line.split(",");
+                let itemID = values[0].trim();
+                let quantity = values[1].trim();
+                let zipCode = values[2].trim();
+
+                // Simulación de respuesta (esto es sólo un ejemplo)
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${itemID}</td>
+                    <td>${quantity}</td>
+                    <td>${zipCode}</td>
+                    <td>2000</td>  <!-- Simulamos estos datos -->
+                    <td>2025-02-20</td>  <!-- Simulamos estos datos -->
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById("csvDownloadSection").style.display = "block";
+
+            generarCSV(lines);  // Generar el archivo CSV a partir de las líneas
+        }
 
 
         function generarCSV(csvContent) {
@@ -185,7 +249,7 @@
                 a.click();
                 document.body.removeChild(a);
             };
-        }
+    }
     </script>
 </body>
 </html>
