@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carga de archivo CSV</title>
+
+    <!-- Vincular el archivo CSS externo -->
+    <link rel="stylesheet" href="styles2.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <div class="contenidoHeader">
+            <img src="Perfaware.png" alt="Logotipo" width="170" height="55">
+            <div class="textoHeader">CARGA DE ARCHIVOS</div>
+        </div>
+    </header>
+
+    <!-- Carga archivo -->
+    <div class="seccionBoton">
+        <form id="fileForm">
+            <label for="archivo">Selecciona un archivo tipo .csv</label><br><br>
+            <input type="file" id="archivo" name="archivo" accept=".csv"><br><br>
+            <button type="submit">Cargar archivo</button>
+        </form>
+    </div>
+
+    <!-- Barra de progreso -->
+    <div id="formatoBarraProgreso" style="display: none;">
+        <div id="barraProgreso"></div>
+    </div>
+
+    <!-- Mensaje de error -->
+    <div id="mensajeError" style="display: none;">
+        <p>¡Error! No se pudo procesar tu archivo.</p>
+    </div>
+
+    <!-- Botón de descarga de CSV -->
+    <div id="csvDownloadSection" style="display: none;">
+        <button id="descargarCsv">Descargar CSV</button>
+    </div>
+
+    <script>
+        document.getElementById("fileForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            let fileInput = document.getElementById("archivo");
+            let file = fileInput.files[0];
+
+            if (!file) {
+                alert("Por favor, selecciona un archivo.");
+                return;
+            }
+
+            // Mostrar barra de progreso
+            document.getElementById("formatoBarraProgreso").style.display = "block";
+            let progress = 0;
+            let interval = setInterval(() => {
+                if (progress < 100) {
+                    progress += 10;
+                    document.getElementById("barraProgreso").style.width = progress + "%";
+                    document.getElementById("barraProgreso").textContent = progress + "%";
+                } else {
+                    clearInterval(interval);
+                }
+            }, 300);
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let text = e.target.result;
+                let lines = text.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+
+                if (lines.length < 1) {
+                    alert("El archivo CSV debe contener al menos una línea de datos.");
+                    return;
+                }
+
+                let xmlString = convertirCSVaXML(lines);
+                console.log("XML generado:\n", xmlString);
+
+                enviarXML(xmlString);
+            };
+
+            reader.readAsText(file);
+        });
+
+        function convertirCSVaXML(lines) {
+		
+			console.log("LEYENDO EL CSV DE ENTRADA "+lines)
+			console.log(lines.length)
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<Promise OrganizationCode="DSW">\n';
+            xml += '  <PromiseLines>\n';
+			let zipCode=""
+            for (let i = 0; i < lines.length; i++) {
+			
+                let values = lines[i].split(",");
+				
+                let itemID = values[0].trim();
+                let requiredQty = values[1].trim();
+                zipCode = values[2].trim();
+
+                xml += `    <PromiseLine ItemID="${itemID}" ProductClass="GOOD" RequiredQty="${requiredQty}" UnitOfMeasure="UN"/>\n`;
+            }
+
+            xml += '  </PromiseLines>\n';
+            xml += `  <ShipToAddress ZipCode="${zipCode}"/>\n`;
+            xml += "</Promise>";
+
+            return xml;
+        }
+
+        function enviarXML(xmlString) {
+            let xhr = new XMLHttpRequest();
+            let url = "https://dsw.perfaware.net/smcfs/restapi/executeFlow/DSWFiinInventoryTest?_token=J0IKdqOiAsTeT2damEKP1BapXGpuKhncwXjMhBnmhNAEtyZnYjUsnH2INPbMgk514386412&_loginid=admin";
+
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/xml");
+			xhr.setRequestHeader("Accept", "application/xml");
+
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    alert("XML enviado con éxito.");
+                    console.log("Respuesta del servidor:", xhr.responseText);
+                    procesarXMLRespuesta(xhr.responseText);
+                } else {
+                    alert("Error al enviar XML: " + xhr.statusText);
+                    document.getElementById("mensajeError").style.display = "block";
+                }
+            };
+
+            xhr.onerror = function() {
+                alert("Error de conexión con el servidor.");
+                document.getElementById("mensajeError").style.display = "block";
+            };
+
+            xhr.send(xmlString);
+        }
+
+        function procesarXMLRespuesta(xmlString) {
+			let parser = new DOMParser();
+			let xmlDoc = parser.parseFromString(xmlString, "text/xml");
+			let promiseLines = xmlDoc.getElementsByTagName("PromiseLine");
+
+			if (promiseLines.length === 0) {
+				alert("No se encontraron datos en la respuesta del servidor.");
+				return;
+			}
+
+			let csvContent = "Item,Cantidad,Nodo,Distancia,Fecha de envío\n"; // Encabezado del CSV
+
+			for (let i = 0; i < promiseLines.length; i++) {
+				let itemID = promiseLines[i].getAttribute("ItemID");
+
+				// Buscar el nodo <Assignments>
+				let assignments = promiseLines[i].getElementsByTagName("Assignment");
+				if (assignments.length > 0) {
+					let assignment = assignments[0]; // Tomamos el primer Assignment
+
+					let quantity = assignment.getAttribute("Quantity") || "N/A";
+					let shipNode = assignment.getAttribute("ShipNode") || "N/A";
+					let distance = assignment.getAttribute("Distance") || "N/A";
+					let deliveryDate = assignment.getAttribute("DeliveryDate") || "N/A";
+
+					csvContent += `${itemID},${quantity},${shipNode},${distance},${deliveryDate}\n`;
+				}
+			}
+
+			generarCSV(csvContent);
+		}
+
+
+        function generarCSV(csvContent) {
+            let blob = new Blob([csvContent], { type: "text/csv" });
+            let url = URL.createObjectURL(blob);
+
+            let downloadButton = document.getElementById("descargarCsv");
+            document.getElementById("csvDownloadSection").style.display = "block";
+            downloadButton.onclick = function() {
+                let a = document.createElement("a");
+                a.href = url;
+                a.download = "resultado.csv";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+        }
+    </script>
+</body>
+</html>
