@@ -92,7 +92,7 @@
                 }
 
                 // Calcular el tiempo total de procesamiento
-                let tiempoBasePorLinea = 3;
+                let tiempoBasePorLinea = 2;
                 let tiempoTotal = lines.length * tiempoBasePorLinea;
 
                 // Mostrar la barra de progreso
@@ -111,7 +111,7 @@
                         setTimeout(function() {
                             document.getElementById("formatoBarraProgreso").style.display = "none";
                             mostrarTabla(lines); // Mostrar la tabla
-                        }, 2000);
+                        }, 1500);
                     }
                 }, stepDuration);
 
