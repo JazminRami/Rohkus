@@ -1,0 +1,149 @@
+header {
+    background-color: #424242c5; 
+    color: #000000;
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 10px 0;
+    display: flex;
+    align-items: center;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.contenidoHeader {
+    display: flex;
+    width: 100%;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.textoHeader {
+    font-size: 22px;
+    font-weight: bold;
+    position: absolute; 
+    left: 48.5%; 
+    transform: translateX(-50%);
+    text-align: center; 
+}
+
+footer {
+    background-color: #424242c5;
+    color: #000000;
+    text-align: center;
+    padding: 10px 0;
+    font-size: 15px;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding-top: 100px;
+    padding-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.seccionBoton {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#formatoBarraProgreso {
+    width: 50vw;
+    background-color: #f3f3f3;
+    border: 1px solid #ddd;
+    height: 20px;
+    margin-top: 20px;
+    position: relative;
+    display: none;
+}
+
+#barraProgreso {
+    height: 100%;
+    width: 0%;
+    background-color: #FAA367;
+    position: absolute;
+    top: 0;
+    left: 0;
+    text-align: center;
+}
+
+#mensajeDescarga {
+    display: none;
+    margin-top: 20px;
+    text-align: center;
+}
+
+#mensajeError {
+    display: none;
+    margin-top: 20px;
+    color: red;
+    text-align: center;
+}
+
+/* Ubicacion de la tabla */
+#tablaResultados {
+    display: none;
+    margin-top: 20px;
+    width: 70%;
+    max-height: 250px;
+    overflow-y: auto;
+    margin: 0 auto;
+}
+
+#tablaResultados table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* Modificaciones de la tabla en general */
+#tablaResultados th, #tablaResultados td {
+    border: 1px solid #ddd;
+    padding: 12px 15px;
+    text-align: center;
+    font-size: 14px;
+}
+
+/* Encabezado de la tabla */
+#tablaResultados th {
+    background-color: #FAA367;
+    font-weight: bold;
+    color: #000000; 
+}
+
+/* Filas alternadas (pares) con fondo claro */
+#tablaResultados tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* Efecto hover al pasar el ratón sobre una fila */
+#tablaResultados tr:hover {
+    background-color: #4242422c;
+}
+
+
+/* Botón de descarga del CSV */
+#csvDownloadSection {
+    margin-top: 30px;
+}
+
+#descargarCsv {
+    padding: 5px 20px;
+    background-color: #EFEFEF;
+    color: #000000;
+    border: 1px solid #000000;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+#descargarCsv:hover {
+    background-color: #42424267;
+}
+
