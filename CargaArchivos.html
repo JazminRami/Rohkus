@@ -15,6 +15,7 @@
         <div class="contenidoHeader">
             <img src="Perfaware.png" alt="Logotipo" width="170" height="55">
             <div class="textoHeader">CARGA DE ARCHIVOS</div>
+            <img src="Impuls.png" alt="Logotipo" width="150" height="50">
         </div>
     </header>
 
@@ -61,44 +62,65 @@
     <footer>
         &copy; 2025 Todos los derechos reservados
     </footer>
+
     <script>
+        let tablaData = []; // Definir tablaData para que sea global
+        let csvContent = ""; // Definir csvContent como global
+        let isError = false; // Bandera para controlar si hay error
+
         document.getElementById("fileForm").addEventListener("submit", function(event) {
             event.preventDefault();
-        
+
+            if (isError) {
+                tablaData = [];
+                csvContent = "";
+                isError = false; // Resetear error
+
+                // Ocultar tabla y barra de progreso
+                document.getElementById("tablaResultados").style.display = "none";
+                document.getElementById("csvDownloadSection").style.display = "none";
+                document.getElementById("formatoBarraProgreso").style.display = "none";
+                document.getElementById("mensajeError").style.display = "none";
+                document.getElementById("barraProgreso").style.width = "0%";
+                document.getElementById("barraProgreso").textContent = "0%";
+            }
+
             let fileInput = document.getElementById("archivo");
             let file = fileInput.files[0];
-        
+
             if (!file) {
                 alert("Por favor, selecciona un archivo.");
                 return;
             }
-        
-            // Limpiar barra, tabla y botón de descarga
+
+            //Limpiar barra, tabla y boton de descarga
             document.getElementById("tablaResultados").style.display = "none";
             document.getElementById("csvDownloadSection").style.display = "none";
             document.getElementById("formatoBarraProgreso").style.display = "block";
             document.getElementById("barraProgreso").style.width = "0%";
             document.getElementById("barraProgreso").textContent = "0%";
-        
+            
             let reader = new FileReader();
             reader.onload = function(e) {
                 let text = e.target.result;
                 let lines = text.split("\n").map(line => line.trim()).filter(line => line.length > 0);
-        
+
                 if (lines.length < 1) {
                     alert("El archivo CSV debe contener al menos una línea de datos.");
                     return;
                 }
-        
+
+                csvContent = "Item,Cantidad,Nodo,Distancia,Fecha de envío\n"; // Encabezado del CSV
+
                 // Calcular el tiempo total de procesamiento
                 let tiempoBasePorLinea = 2;
                 let tiempoTotal = lines.length * tiempoBasePorLinea;
-        
+
                 // Mostrar la barra de progreso
                 let progress = 0;
-                let totalSteps = 100;
+                let totalSteps = 200;
                 let stepDuration = tiempoTotal * 1000 / totalSteps;
-        
+                
                 let interval = setInterval(function() {
                     if (progress < totalSteps) {
                         progress++;
@@ -107,149 +129,174 @@
                         document.getElementById("barraProgreso").textContent = percentage + "%";
                     } else {
                         clearInterval(interval);
-        
-                        let answers = [];  // Almacenar respuestas
-                        let processedLines = 0;
-        
-                        // Procesar cada línea
-                        lines.forEach(function(line) {
-                            let xmlString = convertirCSVaXML([line]);
-                            console.log("XML generado:\n", xmlString);
-                            enviarXML(xmlString, answers, function() {
-
-                                processedLines++;
-                                if (processedLines === lines.length) {
-                                    // Una vez que todas las líneas han sido procesadas, mostrar la tabla y generar CSV
-                                    mostrarTabla(answers);
-                                    generarCSV(answers);
-                                }
-                            });
-                        });
+                        if (isError) { // Si ocurrió un error, detener el proceso
+                            document.getElementById("formatoBarraProgreso").style.display = "none";
+                            return;
+                        }
+                        setTimeout(function() {
+                            document.getElementById("formatoBarraProgreso").style.display = "none";
+                            mostrarTabla(tablaData); 
+                            generarCSV(csvContent); 
+                        }, 1500);
                     }
                 }, stepDuration);
+
+                let xmlList = convertirCSVaXML(lines);
+                console.log("XML generado:\n", xmlList);
+
+                xmlList.forEach((xml,index) => {
+                    enviarXML(xml);
+                })
+
+               
             };
+
             reader.readAsText(file);
         });
-        
+
         function convertirCSVaXML(lines) {
-            console.log("LEYENDO EL CSV DE ENTRADA " + lines)
-            let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-        
-            lines.forEach(function(line) {
-                let values = line.split(",").map(value => value.trim());
+            let xmlList = []; // Lista para almacenar los XML generados
 
-                // Verificar que la línea tenga exactamente 3 valores
-                if (values.length !== 3) {
-                    alert("Error: La línea debe contener exactamente 3 valores (ItemID, cantidad, código postal).");
-                    return;
-                }
+            // Iterar sobre cada línea del archivo CSV
+            for (let i = 0; i < lines.length; i++) {
+                let values = lines[i].split(",");
+                let itemID = values[0].trim();
+                let requiredQty = values[1].trim();
+                let zipCode = values[2].trim();
 
-                let itemID = values[0];
-                let requiredQty = values[1];
-                let zipCode = values[2];
-        
-                xml += `<Promise OrganizationCode="DSW">\n`;
-                xml += `    <PromiseLines>\n`;
-                xml += `        <PromiseLine ItemID="${itemID}" ProductClass="GOOD" RequiredQty="${requiredQty}" UnitOfMeasure="UN" >\n`;
-                xml += `        </PromiseLine>\n`;
-                xml += `    </PromiseLines>\n`;
-                xml += `    <ShipToAddress ZipCode="${zipCode}" />\n`;
+                let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+                xml += `<Promise OrganizationCode="Kipon">\n`;
+                xml += `  <PromiseLines>\n`;
+                xml += `    <PromiseLine ItemID="${itemID}" ProductClass="GOOD" RequiredQty="${requiredQty}" UnitOfMeasure="UN" />\n`;
+                xml += `  </PromiseLines>\n`;
+                xml += `  <ShipToAddress ZipCode="${zipCode}" />\n`;
                 xml += `</Promise>\n`;
-            });
-            return xml;
+
+                // Agregar cada XML generado a la lista
+                xmlList.push(xml);
+            }
+
+            return xmlList; // Retorna la lista con todos los XML generados
         }
-        
-        function enviarXML(xmlString, answers) {
+
+
+        function enviarXML(xmlString) {
             let xhr = new XMLHttpRequest();
-            let url = "https://dsw.perfaware.net/smcfs/restapi/executeFlow/DSWFiinInventoryTest?_token=J0IKdqOiAsTeT2damEKP1BapXGpuKhncwXjMhBnmhNAEtyZnYjUsnH2INPbMgk514386412&_loginid=admin";
-        
+            let url = "https://dev-nazan-oms.internal.perfaware.net/smcfs/restapi/executeFlow/NazanFindInventory?_token=DkhX7WfanfY8PO5XYWCY67jcUByWD0u26tzlxLWPsLCsdpU7I6mrhvUXDEAosiEM30&_loginid=admin";
+
             xhr.open("POST", url, true);
             xhr.setRequestHeader("Content-Type", "application/xml");
             xhr.setRequestHeader("Accept", "application/xml");
-        
+
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
+                    alert("XML enviado con éxito.");
                     console.log("Respuesta del servidor:", xhr.responseText);
-        
-                    // Procesar la respuesta del servidor
-                    setTimeout(function() {
-                        procesarXMLRespuesta(xhr.responseText, answers);
-                    }, 1500);
+                    procesarXMLRespuesta(xhr.responseText);
                 } else {
+                    isError = true; // Marca que hubo un error
                     alert("Error al enviar XML: " + xhr.statusText);
                     document.getElementById("mensajeError").style.display = "block";
+                    document.getElementById("formatoBarraProgreso").style.display = "none"; // Detener barra de progreso
                 }
             };
-        
+
             xhr.onerror = function() {
+                isError = true; // Marca que hubo un error
                 alert("Error de conexión con el servidor.");
                 document.getElementById("mensajeError").style.display = "block";
+                document.getElementById("formatoBarraProgreso").style.display = "none"; // Detener barra de progreso
             };
-        
+            
             xhr.send(xmlString);
         }
+
         
-        function procesarXMLRespuesta(xmlString, answers) {
+
+        function procesarXMLRespuesta(xmlString) {
+            console.log("Procesando respuesta...");
+
             let parser = new DOMParser();
             let xmlDoc = parser.parseFromString(xmlString, "text/xml");
             let promiseLines = xmlDoc.getElementsByTagName("PromiseLine");
-        
+
             if (promiseLines.length === 0) {
+                isError = true; // Marca que hubo un error
                 alert("No se encontraron datos en la respuesta del servidor.");
                 return;
             }
-        
+
+            console.log(promiseLines);
+            
             for (let i = 0; i < promiseLines.length; i++) {
                 let itemID = promiseLines[i].getAttribute("ItemID");
-        
-                // Buscar el nodo <Assignments>
+
+                // Obtener todos los <Assignments>
                 let assignments = promiseLines[i].getElementsByTagName("Assignment");
+
                 if (assignments.length > 0) {
-                    let assignment = assignments[0];  // Tomamos el primer Assignment
-                    let quantity = assignment.getAttribute("Quantity") || "N/A";
-                    let shipNode = assignment.getAttribute("ShipNode") || "N/A";
-                    let distance = assignment.getAttribute("Distance") || "N/A";
-                    let deliveryDate = assignment.getAttribute("DeliveryDate") || "N/A";
-        
-                    answers.push({
-                        itemID, quantity, shipNode, distance, deliveryDate
-                    });
+                    for (let j = 0; j < assignments.length; j++) {
+                        let assignment = assignments[j];
+
+                        let quantity = assignment.getAttribute("Quantity") || "";
+                        let shipNode = assignment.getAttribute("ShipNode") || "Inv. no disponible";
+                        let distance = assignment.getAttribute("Distance") || "N.A.";
+                        let deliveryDate = assignment.getAttribute("DeliveryDate") || "N.A.";
+
+                        // Si el nodo está vacío, marcamos "N/A" en el CSV
+                        if (shipNode.trim() === "") {
+                            shipNode = "Inv. no disponible";
+                        }
+
+                        // Generamos la línea del CSV con los datos
+                        let csvRow = `${itemID},${quantity},${shipNode},${distance},${deliveryDate}`;
+                        csvContent += csvRow + "\n";
+
+                        // Guardar en el array para mostrar en la tabla
+                        tablaData.push(csvRow);
+                    }
                 }
             }
         }
-        
-        function mostrarTabla(answers) {
+
+        function mostrarTabla(lines) {
+            if (isError) return; // Si hubo error, no mostrar tabla
+
             document.getElementById("tablaResultados").style.display = "block";
             let tbody = document.getElementById("resultadoTabla");
             tbody.innerHTML = "";
-        
-            // Llenar la tabla con los datos de las respuestas almacenadas
-            answers.forEach(function(answer) {
+
+            // Llenar la tabla con los datos obtenidos de la respuesta del servidor
+            lines.forEach(function(line) {
+                let values = line.split(",");
+                let itemID = values[0] ? values[0].trim() : "N/A";
+                let quantity = values[1] ? values[1].trim() : "N/A";
+                let shipNode = values[2] ? values[2].trim() : "N/A";
+                let distance = values[3] ? values[3].trim() : "N/A";
+                let deliveryDate = values[4] ? values[4].trim() : "N/A";
+
                 let row = document.createElement("tr");
                 row.innerHTML = `
-                    <td>${answer.itemID}</td>
-                    <td>${answer.quantity}</td>
-                    <td>${answer.shipNode}</td>
-                    <td>${answer.distance}</td>
-                    <td>${answer.deliveryDate}</td>
+                    <td>${itemID}</td>
+                    <td>${quantity}</td>
+                    <td>${shipNode}</td>
+                    <td>${distance}</td>
+                    <td>${deliveryDate}</td>
                 `;
                 tbody.appendChild(row);
             });
-        
+
             document.getElementById("csvDownloadSection").style.display = "block";
         }
-        
-        function generarCSV(answers) {
-            let csvContent = "Item,Cantidad,Nodo,Distancia,Fecha de envío\n"; // Encabezado del CSV
-        
-            // Crear el contenido CSV
-            answers.forEach(function(answer) {
-                csvContent += `${answer.itemID},${answer.quantity},${answer.shipNode},${answer.distance},${answer.deliveryDate}\n`;
-            });
-        
+
+
+
+        function generarCSV(csvContent) {
+            console.log(csvContent); // Verifica si las líneas se están acumulando correctamente
+
             let blob = new Blob([csvContent], { type: "text/csv" });
             let url = URL.createObjectURL(blob);
-        
+
             let downloadButton = document.getElementById("descargarCsv");
             document.getElementById("csvDownloadSection").style.display = "block";
             downloadButton.onclick = function() {
@@ -260,7 +307,7 @@
                 a.click();
                 document.body.removeChild(a);
             };
-        }
+    }
     </script>
 </body>
 </html>
