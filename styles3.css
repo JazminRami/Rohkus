@@ -1,0 +1,121 @@
+header {
+    background-color: #424242c5;
+    color: #000000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.textoHeader {
+    font-size: 22px;
+    font-weight: bold;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+}
+
+footer {
+    background-color: #424242c5;
+    color: #000000;
+    text-align: center;
+    padding: 10px 0;
+    font-size: 15px;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding-top: 100px;
+    padding-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.seccionBoton {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#formatoBarraProgreso {
+    width: 50vw;
+    background-color: #f3f3f3;
+    border: 1px solid #ddd;
+    height: 30px;
+    margin-top: 15px;
+    position: relative;
+    display: none;
+    border-radius: 5px; 
+}
+
+#barraProgreso {
+    height: 100%;
+    width: 0%;
+    background-color: #FAA367;
+    position: absolute;
+    top: 0;
+    left: 0;
+    text-align: center;
+    display: flex;
+    justify-content: center; 
+    align-items: center;
+    border-radius: 5px;
+}
+
+#porcentaje {
+    font-size: 400px;
+    font-weight: bold;
+    color: #000000; 
+    z-index: 10;
+}
+
+#mensajeError {
+    display: none;
+    margin-top: 20px;
+    color: red;
+    text-align: center;
+}
+
+.btnDescargar {
+    padding: 5px 12px; 
+    background-color: #EFEFEF;
+    color: #000000;
+    border: 1px solid #000000;
+    cursor: pointer;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.btnDescargar:hover {
+    background-color: #42424267;
+}
+
+#csvDownloadSection {
+    margin-top: 5px;
+}
+
+.table-responsive {
+    width: 100%;
+    max-height: 300px;  /* Altura máxima para activar el desplazamiento */
+    overflow-x: auto; 
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    table-layout: auto;
+}
+
+th, td {
+    white-space: nowrap; 
+}
