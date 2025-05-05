@@ -1,0 +1,170 @@
+:root{
+    --primary-100:#202020;
+    --primary-200:#427669;
+    --primary-300:#46cccb; 
+    --text-100:#3f3f40;
+    --text-200:#fff;
+    --text-300:#000000;
+    --bg-100:#defff8;
+    --bg-200:#E9ECEF;
+}
+
+header {
+    background-color: var(--primary-100);
+    color: var(--text-200);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.textoHeader {
+    font-size: 1.3rem; 
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+}
+
+body {
+    font-family: Monserrat,Fabriga,-apple-system,BlinkMacSystemFont,avenir next,avenir,helvetica neue,helvetica,ubuntu,roboto,noto,segoe ui,arial,sans-serif;
+    margin: 0;
+    padding-top: 100px;
+    padding-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    letter-spacing: 0.5px;
+    font-size: 1.1rem; 
+}
+
+footer {
+    background-color: var(--primary-100);
+    color: var(--text-200);
+    text-align: center;
+    padding: 10px 0;
+    font-size: 1rem; 
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+.seccionBoton {
+    text-align: center;
+}
+
+#formatoBarraProgreso {
+    width: 50vw;
+    background-color: var(--bg-200);
+    border: 1px solid var(--primary-300);
+    height: 35px;
+    margin-top: 15px;
+    position: relative;
+    display: none;
+    border-radius: 2px; 
+}
+
+#barraProgreso {
+    height: 100%;
+    width: 0%;
+    background-color:  var(--primary-300);
+    color: var(--text-300)!important;
+    font-size: 1rem; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    text-align: center;
+    display: flex;
+    justify-content: center; 
+    align-items: center;
+}
+
+#porcentaje {
+    font-size: 400px;
+    font-weight: bold;
+    color: var(--text-300); 
+    z-index: 10;
+}
+
+#mensajeError {
+    display: none;
+    margin-top: 20px;
+    color: var(--text-100);
+    text-align: center;
+}
+
+.btnDescargar {
+    padding: 10px 35px; 
+    background-color: var(--primary-100);
+    color: var(--text-200);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.btnDescargar:hover {
+    background-color: var(--text-100);
+}
+
+#csvDownloadSection {
+    margin-top: 5px;
+    justify-content: center;
+}
+
+.table-responsive {
+    width: 100%;
+    max-height: 300px;  /* Altura mÃ¡xima para activar el desplazamiento */
+    overflow-x: auto; 
+    overflow-y: auto;
+}
+
+table {
+    width: 100%;
+    table-layout: auto;
+}
+
+th, td {
+    white-space: nowrap; 
+}
+
+th {
+    background-color: var(--primary-300) !important;
+    color: var(--text-300) !important;
+    font-weight: normal
+}
+
+
+
+/* Ajustes para pantallas pequeÃ±as */
+@media (max-width: 968px) {
+    header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 10px;
+    }
+
+    .textoHeader {
+        font-size: 1.05rem; 
+        margin-top: 5px; 
+        text-align: center; 
+    }
+
+    header img {
+        width: 100px;
+        height: auto;  
+    }
+
+    body{
+        font-size: 1rem;
+    }
+    
+    footer{
+        font-size: 0.9rem;
+    }
+}
+
